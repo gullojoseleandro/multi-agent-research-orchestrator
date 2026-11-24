@@ -15,11 +15,14 @@ def route_after_supervisor(state: OrchestratorState) -> Literal["research", "ana
 
 async def final_node(state: OrchestratorState) -> dict:
     analysis = state.get("analysis")
-    if analysis and any(report["source_id"] == analysis["source_id"] for report in state["reports"]):
+    source = next((report for report in state["reports"] if analysis and report["source_id"] == analysis["source_id"]), None)
+    if analysis and source:
+        change = analysis["percent_change"]
+        direction = "increase" if change > 0 else "decrease" if change < 0 else "no change"
         answer = (
             f"{analysis['source_id']}: p95 latency changed from {analysis['baseline_ms']:g} ms "
-            f"to {analysis['current_ms']:g} ms ({analysis['percent_change']}% increase). "
-            f"Source: data/{analysis['source_id']}.md."
+            f"to {analysis['current_ms']:g} ms ({abs(change):.1f}% {direction}). "
+            f"Source: {source['path']}."
         )
     else:
         answer = "I could not verify a source-backed calculation from the available reports."

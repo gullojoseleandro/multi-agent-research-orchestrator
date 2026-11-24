@@ -1,7 +1,7 @@
 import asyncio
 import unittest
 
-from graph import build_graph, run_query
+from graph import build_graph, final_node, run_query
 from supervisor import RouteDecision
 
 
@@ -62,3 +62,13 @@ class GraphTests(unittest.TestCase):
         mermaid = graph.get_graph().draw_mermaid()
         for node in ("supervisor", "research", "analysis", "final"):
             self.assertIn(node, mermaid)
+
+    def test_final_uses_actual_source_and_decrease_label(self) -> None:
+        result = asyncio.run(final_node({
+            "reports": [{"source_id": "INC-301", "path": "data/alternate-source.md", "text": ""}],
+            "analysis": {"source_id": "INC-301", "baseline_ms": 100.0, "current_ms": 80.0, "percent_change": -20.0},
+        }))
+
+        self.assertIn("20.0% decrease", result["answer"])
+        self.assertIn("data/alternate-source.md", result["answer"])
+        self.assertNotIn("increase", result["answer"])
